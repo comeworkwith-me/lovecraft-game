@@ -21,10 +21,7 @@ contract LovecraftGame is ERC721, Ownable {
         uint hp;
         uint maxHp;
         uint attackDamage;
-        uint stamina;
         uint intellect;
-        uint luck;
-        uint spirit;
         uint magic;
     }
 
@@ -36,6 +33,22 @@ contract LovecraftGame is ERC721, Ownable {
     // Creates a mapping from an NFTs' tokenId to that NFTs' character attributes.
     mapping(uint256 => CharacterAttributes) public nftHolderAttributes;
 
+    // An event to notify the user/player that the NFT has been minted.
+    event CharacterMinted(address sender, uint256 tokenId, uint256 characterIndex);
+
+    // An event to notify the user/player that the Shoggoth has been attacked.
+    event AttackComplete(uint newBossHp, uint newPlayerHp);
+
+    struct Shoggoth {
+      string name;
+      string imageURI;
+      uint hp;
+      uint maxHp;
+      uint attackDamage;
+    }
+
+    Shoggoth public shoggoth;
+
     // Creates a mapping from an NFT holders' address to their NFT tokenId.
     mapping (address => uint256) public nftHolders;
 
@@ -45,14 +58,25 @@ contract LovecraftGame is ERC721, Ownable {
         string[] memory characterDescriptions,
         uint[] memory characterHp,
         uint[] memory characterAttackDmg,
-        uint[] memory characterStamina,
         uint[] memory characterIntellect,
-        uint[] memory characterLuck,
-        uint[] memory characterSpirit,
-        uint[] memory characterMagic
+        uint[] memory characterMagic,
+        string memory shoggothName,
+        string memory shoggothImageURI,
+        uint shoggothHp,
+        uint shoggothAttackDamage
     ) 
         ERC721("LOVECRAFT", "LC")
     {
+        shoggoth = Shoggoth({
+          name: shoggothName,
+          imageURI: shoggothImageURI,
+          hp: shoggothHp,
+          maxHp: shoggothHp,
+          attackDamage: shoggothAttackDamage
+        });
+
+        console.log("Done initializing %s w/ HP %s, img %s", shoggoth.name, shoggoth.hp, shoggoth.imageURI);
+
         for(uint i = 0; i < characterNames.length; i += 1) {
         defaultCharacters.push(CharacterAttributes({
         characterIndex: i,
@@ -62,10 +86,7 @@ contract LovecraftGame is ERC721, Ownable {
         hp: characterHp[i],
         maxHp: characterHp[i],
         attackDamage: characterAttackDmg[i],
-        stamina: characterStamina[i],
         intellect: characterIntellect[i],
-        luck: characterLuck[i],
-        spirit: characterSpirit[i],
         magic: characterMagic[i]
       }));
 
@@ -82,10 +103,7 @@ contract LovecraftGame is ERC721, Ownable {
   string memory strHp = Strings.toString(charAttributes.hp);
   string memory strMaxHp = Strings.toString(charAttributes.maxHp);
   string memory strAttackDamage = Strings.toString(charAttributes.attackDamage);
-  string memory strStamina = Strings.toString(charAttributes.stamina);
   string memory strIntellect = Strings.toString(charAttributes.intellect);
-  string memory strLuck = Strings.toString(charAttributes.luck);
-  string memory strSpirit = Strings.toString(charAttributes.spirit);
   string memory strMagic = Strings.toString(charAttributes.magic);
 
   string memory json = Base64.encode(
@@ -101,7 +119,7 @@ contract LovecraftGame is ERC721, Ownable {
           '", "image": "',
           charAttributes.imageURI,
           '", "attributes": [ { "trait_type": "Health Points", "value": ',strHp,', "max_value":',strMaxHp,'}, { "trait_type": "Attack Damage", "value": ',
-          strAttackDamage,'}, { "display_type": "boost_percentage", "trait_type": "Stamina", "value": ',strStamina,'}, { "display_type": "boost_percentage", "trait_type": "Intellect", "value": ',strIntellect,'}, { "display_type": "boost_percentage", "trait_type": "Luck", "value": ',strLuck,'}, { "display_type": "boost_percentage", "trait_type": "Spirit", "value": ',strSpirit,'}, { "display_type": "boost_percentage", "trait_type": "Magic", "value": ',strMagic,'} ]}'
+          strAttackDamage,'}, { "display_type": "boost_percentage", "trait_type": "Intellect", "value": ',strIntellect,'}, { "display_type": "boost_percentage", "trait_type": "Magic", "value": ',strMagic,'} ]}'
         )
       )
     )
@@ -130,10 +148,7 @@ contract LovecraftGame is ERC721, Ownable {
           hp: defaultCharacters[_characterIndex].hp,
           maxHp: defaultCharacters[_characterIndex].maxHp,
           attackDamage: defaultCharacters[_characterIndex].attackDamage,
-          stamina: defaultCharacters[_characterIndex].stamina,
           intellect: defaultCharacters[_characterIndex].intellect,
-          luck: defaultCharacters[_characterIndex].luck,
-          spirit: defaultCharacters[_characterIndex].spirit,
           magic: defaultCharacters[_characterIndex].magic
       });
 
@@ -143,5 +158,57 @@ contract LovecraftGame is ERC721, Ownable {
       nftHolders[msg.sender] = newItemId;
 
       _tokenIDs.increment();
+
+      // This "fires" off the CharacterMinted event.
+      emit CharacterMinted(msg.sender, newItemId, _characterIndex);
   }
+
+  function attackShoggoth() public {
+    uint256 nftTokenIdOfPlayer = nftHolders[msg.sender];
+    CharacterAttributes storage player = nftHolderAttributes[nftTokenIdOfPlayer];
+    console.log("\nPlayer w/ character %s about to attack. Has %s HP and %s AD", player.name, player.hp, player.attackDamage);
+    console.log(" %s has %s HP and %s AD", shoggoth.name, shoggoth.hp, shoggoth.attackDamage);
+
+    require (
+      player.hp > 0,
+      "Error: Your character must have health points to attack the Shoggoth."
+    );
+
+    require (
+      shoggoth.hp > 0,
+      "Error: The Shoggoth is dead."
+    );
+
+    if (shoggoth.hp < player.attackDamage) {
+      shoggoth.hp = 0;
+    } else {
+      shoggoth.hp = shoggoth.hp - player.attackDamage;
+    }
+
+    if (player.hp < shoggoth.attackDamage) {
+      player.hp = 0;
+    } else {
+      player.hp = player.hp - shoggoth.attackDamage;
+    }
+
+    // This "fires" the AttackComplete event and returns the Shoggoths' and Players'/Users' health points.
+    emit AttackComplete(shoggoth.hp, player.hp);
+  }
+
+  // This function checks if the players/users have a character.
+  function checkIfUserHasNFT() public view returns (CharacterAttributes memory) {
+    uint256 userNftTokenId = nftHolders[msg.sender];
+    if (userNftTokenId > 0) {
+    return nftHolderAttributes[userNftTokenId];
+  } else {
+    CharacterAttributes memory emptyStruct;
+    return emptyStruct;
+   }
+  }
+
+  // This function is for the web app's "character select" screen.
+  function getAllDefaultCharacters() public view returns (CharacterAttributes[] memory) {
+  return defaultCharacters;
+  }
+
 }

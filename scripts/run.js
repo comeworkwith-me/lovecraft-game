@@ -52,16 +52,6 @@ const main = async () => {
        "250"
       ],
 
-    // Character Stamina
-      ["50",
-       "100",
-       "20",
-       "35",
-       "15",
-       "40",
-       "70"
-      ],
-
     // Character Intellect
       ["80",
        "70",
@@ -72,26 +62,6 @@ const main = async () => {
        "65"
       ],
 
-    // Character Luck
-      ["10",
-       "15",
-       "30",
-       "50",
-       "70",
-       "10",
-       "40"
-      ],
-
-    // Character Spirit
-      ["30",
-       "40",
-       "45",
-       "50",
-       "65",
-       "20",
-       "70"
-      ],
-
     // Character Magic
       ["100",
        "30",
@@ -100,20 +70,35 @@ const main = async () => {
        "20",
        "20",
        "70"
-      ]
+      ],
+
+    // Shoggoth Name
+      "Shoggoth",
+
+    // Shoggoth Image
+      "ipfs://QmaiuGQhTDypmEun2Tb84vexYofAeN15B5s6NZJpgrJmYp/shoggoth_attack.jpg",
+
+    // Shoggoth Health Points
+      "8000",
+
+    // Shoggoth Attack Damage
+      "75"
+
+
     );
     
     await lovecraftContract.deployed();
     console.log("Contract deployed to:", lovecraftContract.address);
 
     let txn;
-    txn = await lovecraftContract.mintCharacter(2);
+    txn = await lovecraftContract.mintCharacter(0);
     await txn.wait();
 
+    txn = await lovecraftContract.attackShoggoth();
+    await txn.wait();
 
-    // This will get the value of the NFTs URI.
-    let returnedTokenUri = await lovecraftContract.tokenURI(1);
-    console.log("Token URI:", returnedTokenUri);
+    txn = await lovecraftContract.attackShoggoth();
+    await txn.wait();
 
   };
   
