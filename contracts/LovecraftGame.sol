@@ -37,7 +37,7 @@ contract LovecraftGame is ERC721, Ownable {
     event CharacterMinted(address sender, uint256 tokenId, uint256 characterIndex);
 
     // An event to notify the user/player that the Shoggoth has been attacked.
-    event AttackComplete(uint newBossHp, uint newPlayerHp);
+    event AttackComplete(uint newShoggothHp, uint newPlayerHp);
 
     struct Shoggoth {
       string name;
@@ -116,7 +116,7 @@ contract LovecraftGame is ERC721, Ownable {
           Strings.toString(_tokenId),
           '", "description": "',
           charAttributes.description, 
-          '", "image": "',
+          '", "image": "ipfs://',
           charAttributes.imageURI,
           '", "attributes": [ { "trait_type": "Health Points", "value": ',strHp,', "max_value":',strMaxHp,'}, { "trait_type": "Attack Damage", "value": ',
           strAttackDamage,'}, { "display_type": "boost_percentage", "trait_type": "Intellect", "value": ',strIntellect,'}, { "display_type": "boost_percentage", "trait_type": "Magic", "value": ',strMagic,'} ]}'
@@ -196,7 +196,7 @@ contract LovecraftGame is ERC721, Ownable {
   }
 
   // This function checks if the players/users have a character.
-  function checkIfUserHasNFT() public view returns (CharacterAttributes memory) {
+  function checkUserNFT() public view returns (CharacterAttributes memory) {
     uint256 userNftTokenId = nftHolders[msg.sender];
     if (userNftTokenId > 0) {
     return nftHolderAttributes[userNftTokenId];
@@ -207,8 +207,13 @@ contract LovecraftGame is ERC721, Ownable {
   }
 
   // This function is for the web app's "character select" screen.
-  function getAllDefaultCharacters() public view returns (CharacterAttributes[] memory) {
+  function getAllCharacters() public view returns (CharacterAttributes[] memory) {
   return defaultCharacters;
   }
+
+  // This function is for the web app's "arena" screen.
+  function getShoggoth() public view returns (Shoggoth memory) {
+  return shoggoth;
+}
 
 }
